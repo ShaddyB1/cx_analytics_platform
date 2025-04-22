@@ -120,4 +120,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Portfolio: [https://shadrackaddo.net](https://shadrackaddo.net)
 - GitHub: [@ShaddyB1](https://github.com/ShaddyB1)
-- LinkedIn: [Shadrack Addo](https://www.linkedin.com/in/shadrackaddo/) 
+
