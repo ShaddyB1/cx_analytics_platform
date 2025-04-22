@@ -1,10 +1,6 @@
 # Customer Experience Analytics Platform
 
-![GitHub stars](https://img.shields.io/github/stars/ShaddyB1/cx_analytics_platform?style=social)
-![GitHub forks](https://img.shields.io/github/forks/ShaddyB1/cx_analytics_platform?style=social)
-![GitHub license](https://img.shields.io/github/license/ShaddyB1/cx_analytics_platform)
 
-A comprehensive data science solution for customer service analytics, designed to showcase skills relevant for a Data Scientist role at Wealthsimple.
 
 <p align="center">
   <img src="docs/architecture_diagram.png" alt="Architecture Diagram" width="800"/>
