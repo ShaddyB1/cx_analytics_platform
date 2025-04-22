@@ -1,0 +1,90 @@
+# Name your project! Project names should contain only lowercase characters
+# and underscores. A good package name should reflect your organization's
+# name or the intended use of these models
+name: 'cx_analytics'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'cx_analytics'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project can be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+# Config blocks can be used to define default parameters for models in specific folders
+models:
+  cx_analytics:
+    # Config applied to all models in this project
+    +materialized: view
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+      agent_performance:
+        +tags: ["agent", "performance"]
+      ticket_analytics:
+        +tags: ["ticket", "analytics"]
+      customer_insights:
+        +tags: ["customer", "insights"]
+      forecasting:
+        +tags: ["forecasting"]
+
+# Define custom variables
+vars:
+  # Use these variables to configure your dbt project
+  start_date: '2023-01-01'
+  # Define ticket status categories
+  resolved_statuses: ['Resolved', 'Closed']
+  open_statuses: ['Open', 'In Progress', 'Reopened']
+  # Define SLA thresholds in minutes
+  sla_thresholds:
+    critical: 30
+    high: 60
+    medium: 240
+    low: 480
+
+# Configuring seeds (CSV files loaded into the database)
+seeds:
+  cx_analytics:
+    +schema: raw
+    ticket_categories:
+      +column_types:
+        category_id: varchar
+        category_name: varchar
+        category_description: varchar
+    priority_definitions:
+      +column_types:
+        priority_id: varchar
+        priority_name: varchar
+        sla_minutes: integer
+
+# Set quoting behavior for database identifiers
+quoting:
+  database: false
+  schema: false
+  identifier: false
+
+# Configuring package dependencies
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.1
+  - package: calogica/dbt_date
+    version: 0.9.0 

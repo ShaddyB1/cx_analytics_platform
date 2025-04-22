@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for data storage
+  postgres:
+    image: postgres:14
+    container_name: cx_analytics_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cxuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cxpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-cx_analytics}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - cx_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cxuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow for workflow orchestration
+  airflow:
+    image: apache/airflow:2.6.3
+    container_name: cx_analytics_airflow
+    depends_on:
+      - postgres
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER:-cxuser}:${POSTGRES_PASSWORD:-cxpassword}@postgres:5432/${POSTGRES_DB:-cx_analytics}
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+      - AIRFLOW_CONN_POSTGRES_DEFAULT=postgresql+psycopg2://${POSTGRES_USER:-cxuser}:${POSTGRES_PASSWORD:-cxpassword}@postgres:5432/${POSTGRES_DB:-cx_analytics}
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-cxuser}:${POSTGRES_PASSWORD:-cxpassword}@postgres:5432/${POSTGRES_DB:-cx_analytics}
+    volumes:
+      - ./airflow_dags:/opt/airflow/dags
+      - ./models:/opt/airflow/dags/cx_analytics_platform/models
+      - ./data:/opt/airflow/dags/cx_analytics_platform/data
+      - ./dbt_project:/opt/airflow/dags/cx_analytics_platform/dbt_project
+      - ./dashboards:/opt/airflow/dags/cx_analytics_platform/dashboards
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"
+    networks:
+      - cx_network
+    command: airflow standalone
+
+  # dbt for data transformations
+  dbt:
+    build:
+      context: .
+      dockerfile: dbt.Dockerfile
+    container_name: cx_analytics_dbt
+    depends_on:
+      - postgres
+    environment:
+      - DBT_PROFILES_DIR=/dbt/profiles
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-cxuser}:${POSTGRES_PASSWORD:-cxpassword}@postgres:5432/${POSTGRES_DB:-cx_analytics}
+    volumes:
+      - ./dbt_project:/dbt
+      - dbt_logs:/dbt/logs
+      - dbt_target:/dbt/target
+    networks:
+      - cx_network
+    command: tail -f /dev/null
+
+  # Streamlit dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard.Dockerfile
+    container_name: cx_analytics_dashboard
+    depends_on:
+      - postgres
+    environment:
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-cxuser}:${POSTGRES_PASSWORD:-cxpassword}@postgres:5432/${POSTGRES_DB:-cx_analytics}
+    volumes:
+      - ./dashboards:/app/dashboards
+      - ./models:/app/models
+    ports:
+      - "8501:8501"
+    networks:
+      - cx_network
+    command: streamlit run /app/dashboards/app.py
+
+networks:
+  cx_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  airflow_logs:
+  dbt_logs:
+  dbt_target: 
